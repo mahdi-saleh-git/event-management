@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Event;
+use App\Http\Resources\EventResource;
 
 class EventController extends Controller
 {
@@ -13,7 +14,8 @@ class EventController extends Controller
      */
     public function index()
     {
-        return Event::all();
+        // return Event::all(); ->without use of resource
+        return EventResource::collection(Event::with('user', 'attendee')->get());
     }
 
     /**
@@ -23,15 +25,15 @@ class EventController extends Controller
     {
         $event = Event::create([
             ...$request->validate([
-                'name' => 'required|max:225',
-                'description' => 'nullable|max:1000',
+                'name' => 'required|string|max:225',
+                'description' => 'nullable|string',
                 'start_at' => 'required|date|after_or_equal:today',
                 'end_at' => 'required|date|after:start_at',
             ]),
             'user_id' => 1,
         ]);
 
-        return $event;
+        return new EventResource($event);
     }
 
     /**
@@ -39,7 +41,9 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-        return $event;
+        // return $event; ->without use of resource
+        $event->load('user', 'attendee');
+        return new EventResource($event);
     }
 
     /**
@@ -49,13 +53,13 @@ class EventController extends Controller
     {
         $event->update(
             $request->validate([
-                'name' => 'sometimes|max:225',
-                'description' => 'nullable|max:1000',
-                'start_at' => 'sometimes|date',
+                'name' => 'sometimes|string|max:225',
+                'description' => 'nullable|string',
+                'start_at' => 'sometimes|date|after_or_equal:today',
                 'end_at' => 'sometimes|date|after:start_at',
             ])
             );
-        return $event;
+        return new EventResource($event);
     }
 
     /**
